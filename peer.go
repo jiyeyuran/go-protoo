@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/jiyeyuran/protoo/transport"
 )
 
 type sentInfo struct {
@@ -44,14 +43,14 @@ type Peer struct {
 	logger    logr.Logger
 	locker    sync.Mutex
 	id        string
-	transport transport.Transport
+	transport Transport
 	sents     map[uint32]sentInfo
 	data      struct{}
 	closed    bool
 	closeCh   chan struct{}
 }
 
-func NewPeer(peerId string, transport transport.Transport) *Peer {
+func NewPeer(peerId string, transport Transport) *Peer {
 	peer := &Peer{
 		IEventEmitter: NewEventEmitter(),
 		logger:        NewLogger("Peer"),

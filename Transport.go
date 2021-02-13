@@ -1,10 +1,14 @@
-package transport
+package protoo
 
-import "github.com/jiyeyuran/go-eventemitter"
+import (
+	"fmt"
+
+	"github.com/jiyeyuran/go-eventemitter"
+)
 
 type Transport interface {
 	eventemitter.IEventEmitter
-	Id() string
+	fmt.Stringer
 	Send(data []byte) error
 	Close()
 	Closed() bool

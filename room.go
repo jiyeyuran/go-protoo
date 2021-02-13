@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/go-logr/logr"
-	"github.com/jiyeyuran/protoo/transport"
 )
 
 type Room struct {
@@ -56,11 +55,11 @@ func (r *Room) Close() {
 	r.SafeEmit("close")
 }
 
-func (r *Room) CreatePeer(peerId string, transport transport.Transport) (peer *Peer, err error) {
+func (r *Room) CreatePeer(peerId string, transport Transport) (peer *Peer, err error) {
 	r.locker.Lock()
 	defer r.locker.Unlock()
 
-	r.logger.V(1).Info("createPeer()", "peerId", peerId, "transport", transport.Id())
+	r.logger.V(1).Info("createPeer()", "peerId", peerId, "transport", transport.String())
 
 	if _, ok := r.peers[peerId]; ok {
 		transport.Close()
