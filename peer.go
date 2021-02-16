@@ -64,6 +64,10 @@ func NewPeer(peerId string, transport Transport) *Peer {
 	return peer
 }
 
+func (peer *Peer) Id() string {
+	return peer.id
+}
+
 func (peer *Peer) Close() {
 	peer.locker.Lock()
 	defer peer.locker.Unlock()
