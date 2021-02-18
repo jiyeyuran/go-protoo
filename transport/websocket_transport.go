@@ -26,8 +26,6 @@ func NewWebsocketTransport(conn *websocket.Conn) protoo.Transport {
 		conn:          conn,
 	}
 
-	t.handleConnection(conn)
-
 	return t
 }
 
@@ -64,9 +62,9 @@ func (t *WebsocketTransport) String() string {
 	return t.conn.RemoteAddr().String()
 }
 
-func (t *WebsocketTransport) handleConnection(conn *websocket.Conn) {
+func (t *WebsocketTransport) Run() {
 	for {
-		messageType, data, err := conn.ReadMessage()
+		messageType, data, err := t.conn.ReadMessage()
 
 		if err != nil {
 			t.Close()
