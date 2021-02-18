@@ -62,13 +62,13 @@ func (t *WebsocketTransport) String() string {
 	return t.conn.RemoteAddr().String()
 }
 
-func (t *WebsocketTransport) Run() {
+func (t *WebsocketTransport) Run() error {
 	for {
 		messageType, data, err := t.conn.ReadMessage()
 
 		if err != nil {
 			t.Close()
-			return
+			return err
 		}
 
 		if messageType == websocket.BinaryMessage {

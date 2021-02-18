@@ -12,5 +12,5 @@ type Transport interface {
 	Send(data []byte) error
 	Close()
 	Closed() bool
-	Run()
+	Run() error
 }
