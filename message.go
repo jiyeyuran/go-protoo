@@ -14,12 +14,19 @@ type Message struct {
 	Method       string          `json:"method,omitempty"`
 	Data         json.RawMessage `json:"data,omitempty"`
 
-	Error
+	*Error
 }
 
 type Error struct {
 	ErrorCode   int    `json:"errorCode,omitempty"`
 	ErrorReason string `json:"errorReason,omitempty"`
+}
+
+func NewError(code int, reason string) *Error {
+	return &Error{
+		ErrorCode:   code,
+		ErrorReason: reason,
+	}
 }
 
 func (e Error) Error() string {
@@ -60,7 +67,7 @@ func CreateSuccessResponse(request Message, data interface{}) Message {
 	}
 }
 
-func CreateErrorResponse(request Message, err Error) Message {
+func CreateErrorResponse(request Message, err *Error) Message {
 	return Message{
 		Response: true,
 		Id:       request.Id,

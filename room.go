@@ -55,7 +55,7 @@ func (r *Room) Close() {
 	r.SafeEmit("close")
 }
 
-func (r *Room) CreatePeer(peerId string, transport Transport) (peer *Peer, err error) {
+func (r *Room) CreatePeer(peerId string, peerData interface{}, transport Transport) (peer *Peer, err error) {
 	r.locker.Lock()
 	defer r.locker.Unlock()
 
@@ -67,7 +67,7 @@ func (r *Room) CreatePeer(peerId string, transport Transport) (peer *Peer, err e
 		return
 	}
 
-	peer = NewPeer(peerId, transport)
+	peer = NewPeer(peerId, peerData, transport)
 	r.peers[peerId] = peer
 
 	peer.On("close", func() {

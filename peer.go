@@ -45,18 +45,19 @@ type Peer struct {
 	id        string
 	transport Transport
 	sents     map[uint32]sentInfo
-	data      struct{}
+	data      interface{}
 	closed    bool
 	closeCh   chan struct{}
 }
 
-func NewPeer(peerId string, transport Transport) *Peer {
+func NewPeer(peerId string, data interface{}, transport Transport) *Peer {
 	peer := &Peer{
 		IEventEmitter: NewEventEmitter(),
 		logger:        NewLogger("Peer"),
 		id:            peerId,
 		transport:     transport,
 		sents:         make(map[uint32]sentInfo),
+		data:          data,
 		closeCh:       make(chan struct{}),
 	}
 	peer.handleTransport()
@@ -66,6 +67,10 @@ func NewPeer(peerId string, transport Transport) *Peer {
 
 func (peer *Peer) Id() string {
 	return peer.id
+}
+
+func (peer *Peer) Data() interface{} {
+	return peer.data
 }
 
 func (peer *Peer) Close() {
@@ -151,14 +156,14 @@ func (peer *Peer) handleRequest(request Message) {
 		response := CreateSuccessResponse(request, data)
 		peer.transport.Send(response.Marshal())
 	}, func(err error) {
-		var anErr Error
-		e1, ok := err.(Error)
+		var anErr *Error
+		e1, ok := err.(*Error)
 		if ok {
 			anErr = e1
-		} else if e2, ok := err.(*Error); ok {
-			anErr = *e2
+		} else if e2, ok := err.(Error); ok {
+			anErr = &e2
 		} else {
-			anErr = Error{ErrorCode: 500, ErrorReason: err.Error()}
+			anErr = NewError(500, err.Error())
 		}
 		response := CreateErrorResponse(request, anErr)
 		peer.transport.Send(response.Marshal())
