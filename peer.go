@@ -88,6 +88,12 @@ func (peer *Peer) Close() {
 
 func (peer *Peer) Request(method string, data interface{}) (rsp PeerResponse) {
 	request := CreateRequest(method, data)
+
+	if err := peer.transport.Send(request.Marshal()); err != nil {
+		rsp.err = err
+		return
+	}
+
 	sent := sentInfo{
 		id:     request.Id,
 		method: method,
