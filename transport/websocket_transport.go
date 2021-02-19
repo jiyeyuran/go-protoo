@@ -30,9 +30,13 @@ func NewWebsocketTransport(conn *websocket.Conn) protoo.Transport {
 }
 
 func (t *WebsocketTransport) Send(message []byte) error {
-	if t.Closed() {
+	t.locker.Lock()
+	defer t.locker.Unlock()
+
+	if t.closed {
 		return errors.New("transport closed")
 	}
+
 	return t.conn.WriteMessage(websocket.TextMessage, message)
 }
 
