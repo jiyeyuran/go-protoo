@@ -89,11 +89,6 @@ func (peer *Peer) Close() {
 func (peer *Peer) Request(method string, data interface{}) (rsp PeerResponse) {
 	request := CreateRequest(method, data)
 
-	if err := peer.transport.Send(request.Marshal()); err != nil {
-		rsp.err = err
-		return
-	}
-
 	sent := sentInfo{
 		id:     request.Id,
 		method: method,
@@ -115,7 +110,12 @@ func (peer *Peer) Request(method string, data interface{}) (rsp PeerResponse) {
 		peer.locker.Unlock()
 	}()
 
-	timeout := 1000 * (15 + (0.1 * float64(size)))
+	if err := peer.transport.Send(request.Marshal()); err != nil {
+		rsp.err = err
+		return
+	}
+
+	timeout := 2000 * (15 + (0.1 * float64(size)))
 	timer := time.NewTimer(time.Duration(timeout) * time.Millisecond)
 	defer timer.Stop()
 
