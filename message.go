@@ -49,10 +49,10 @@ func CreateRequest(method string, data interface{}) Message {
 	raw, _ := json.Marshal(data)
 
 	return Message{
-		Response: true,
-		Id:       generateRandomNumber(),
-		Method:   method,
-		Data:     json.RawMessage(raw),
+		Request: true,
+		Id:      generateRandomNumber(),
+		Method:  method,
+		Data:    json.RawMessage(raw),
 	}
 }
 
