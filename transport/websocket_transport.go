@@ -91,6 +91,4 @@ func (t *WebsocketTransport) Run() error {
 
 		t.SafeEmit("message", message)
 	}
-
-	return nil
 }
