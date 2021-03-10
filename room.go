@@ -53,6 +53,7 @@ func (r *Room) Close() {
 
 	r.peers = make(map[string]*Peer)
 	r.SafeEmit("close")
+	r.RemoveAllListeners()
 }
 
 func (r *Room) CreatePeer(peerId string, peerData interface{}, transport Transport) (peer *Peer, err error) {

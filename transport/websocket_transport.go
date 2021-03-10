@@ -53,6 +53,7 @@ func (t *WebsocketTransport) Close() {
 	t.closed = true
 	t.conn.Close()
 	t.SafeEmit("close")
+	t.RemoveAllListeners()
 }
 
 func (t *WebsocketTransport) Closed() bool {

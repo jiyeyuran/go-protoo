@@ -84,6 +84,7 @@ func (peer *Peer) Close() {
 	peer.closed = true
 	close(peer.closeCh)
 	peer.SafeEmit("close")
+	peer.RemoveAllListeners()
 }
 
 func (peer *Peer) Request(method string, data interface{}) (rsp PeerResponse) {
