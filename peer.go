@@ -60,7 +60,10 @@ func NewPeer(peerId string, data interface{}, transport Transport) *Peer {
 		data:          data,
 		closeCh:       make(chan struct{}),
 	}
-	peer.handleTransport()
+
+	if transport != nil {
+		peer.handleTransport()
+	}
 
 	return peer
 }
