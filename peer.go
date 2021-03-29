@@ -119,7 +119,7 @@ func (peer *Peer) Request(method string, data interface{}) (rsp PeerResponse) {
 		return
 	}
 
-	timeout := 2000 * (15 + (0.1 * float64(size)))
+	timeout := 1000 * (15 + (0.1 * float64(size)))
 	timer := time.NewTimer(time.Duration(timeout) * time.Millisecond)
 	defer timer.Stop()
 
