@@ -86,6 +86,7 @@ func (peer *Peer) Close() {
 
 	peer.closed = true
 	close(peer.closeCh)
+	peer.transport.Close()
 	peer.SafeEmit("close")
 	peer.RemoveAllListeners()
 }
@@ -162,7 +163,7 @@ func (peer *Peer) handleTransport() {
 }
 
 func (peer *Peer) handleRequest(request Message) {
-	peer.SafeEmit("request", request, func(data interface{}) {
+	peer.Emit("request", request, func(data interface{}) {
 		response := CreateSuccessResponse(request, data)
 		peer.transport.Send(response.Marshal())
 	}, func(err error) {
@@ -208,5 +209,5 @@ func (peer *Peer) handleResponse(response Message) {
 }
 
 func (peer *Peer) handleNotification(notification Message) {
-	peer.SafeEmit("notification", notification)
+	peer.Emit("notification", notification)
 }

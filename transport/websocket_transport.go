@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"sync"
+	"sync/atomic"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/websocket"
@@ -16,7 +17,7 @@ type WebsocketTransport struct {
 	logger logr.Logger
 	locker sync.Mutex
 	conn   *websocket.Conn
-	closed bool
+	closed uint32
 }
 
 func NewWebsocketTransport(conn *websocket.Conn) protoo.Transport {
@@ -30,37 +31,27 @@ func NewWebsocketTransport(conn *websocket.Conn) protoo.Transport {
 }
 
 func (t *WebsocketTransport) Send(message []byte) error {
-	t.locker.Lock()
-	defer t.locker.Unlock()
-
-	if t.closed {
+	if t.Closed() {
 		return errors.New("transport closed")
 	}
-
-	return t.conn.WriteMessage(websocket.TextMessage, message)
+	err := t.conn.WriteMessage(websocket.TextMessage, message)
+	if err != nil {
+		t.Close()
+	}
+	return err
 }
 
 func (t *WebsocketTransport) Close() {
-	t.locker.Lock()
-	defer t.locker.Unlock()
-
-	if t.closed {
-		return
+	if atomic.CompareAndSwapUint32(&t.closed, 0, 1) {
+		t.logger.V(1).Info("close()", "conn", t.String())
+		t.conn.Close()
+		t.SafeEmit("close")
+		t.RemoveAllListeners()
 	}
-
-	t.logger.V(1).Info("close()", "conn", t.String())
-
-	t.closed = true
-	t.conn.Close()
-	t.SafeEmit("close")
-	t.RemoveAllListeners()
 }
 
 func (t *WebsocketTransport) Closed() bool {
-	t.locker.Lock()
-	defer t.locker.Unlock()
-
-	return t.closed
+	return atomic.LoadUint32(&t.closed) > 0
 }
 
 func (t *WebsocketTransport) String() string {
@@ -94,6 +85,6 @@ func (t *WebsocketTransport) Run() error {
 			continue
 		}
 
-		t.SafeEmit("message", message)
+		t.Emit("message", message)
 	}
 }
