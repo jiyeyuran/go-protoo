@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -41,12 +42,11 @@ func (r PeerResponse) Err() error {
 type Peer struct {
 	IEventEmitter
 	logger    logr.Logger
-	locker    sync.Mutex
 	id        string
 	transport Transport
-	sents     map[uint32]sentInfo
+	sents     sync.Map
 	data      interface{}
-	closed    bool
+	closed    uint32
 	closeCh   chan struct{}
 }
 
@@ -56,7 +56,6 @@ func NewPeer(peerId string, data interface{}, transport Transport) *Peer {
 		logger:        NewLogger("Peer"),
 		id:            peerId,
 		transport:     transport,
-		sents:         make(map[uint32]sentInfo),
 		data:          data,
 		closeCh:       make(chan struct{}),
 	}
@@ -77,14 +76,9 @@ func (peer *Peer) Data() interface{} {
 }
 
 func (peer *Peer) Close() {
-	peer.locker.Lock()
-	defer peer.locker.Unlock()
-
-	if peer.closed {
+	if !atomic.CompareAndSwapUint32(&peer.closed, 0, 1) {
 		return
 	}
-
-	peer.closed = true
 	close(peer.closeCh)
 	peer.transport.Close()
 	peer.SafeEmit("close")
@@ -93,35 +87,21 @@ func (peer *Peer) Close() {
 
 func (peer *Peer) Request(method string, data interface{}) (rsp PeerResponse) {
 	request := CreateRequest(method, data)
-
 	sent := sentInfo{
 		id:     request.Id,
 		method: method,
 		respCh: make(chan PeerResponse),
 	}
 
-	peer.locker.Lock()
-
-	size := len(peer.sents)
-	peer.sents[sent.id] = sent
-
-	peer.locker.Unlock()
-
-	defer func() {
-		peer.locker.Lock()
-
-		delete(peer.sents, sent.id)
-
-		peer.locker.Unlock()
-	}()
+	peer.sents.Store(sent.id, sent)
+	defer peer.sents.Delete(sent.id)
 
 	if err := peer.transport.Send(request.Marshal()); err != nil {
 		rsp.err = err
 		return
 	}
 
-	timeout := 1000 * (15 + (0.1 * float64(size)))
-	timer := time.NewTimer(time.Duration(timeout) * time.Millisecond)
+	timer := time.NewTimer(15 * time.Second)
 	defer timer.Stop()
 
 	select {
@@ -182,22 +162,13 @@ func (peer *Peer) handleRequest(request Message) {
 }
 
 func (peer *Peer) handleResponse(response Message) {
-	peer.locker.Lock()
-
-	sent, ok := peer.sents[response.Id]
-
+	val, ok := peer.sents.Load(response.Id)
 	if !ok {
-		peer.locker.Unlock()
 		err := errors.New("bad response")
 		peer.logger.Error(err, "received response does not match any sent request", "id", response.Id)
 		return
 	}
-
-	delete(peer.sents, response.Id)
-
-	peer.locker.Unlock()
-
-	if response.OK {
+	if sent := val.(sentInfo); response.OK {
 		sent.respCh <- PeerResponse{
 			data: response.Data,
 		}

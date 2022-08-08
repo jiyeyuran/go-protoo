@@ -15,7 +15,7 @@ import (
 type WebsocketTransport struct {
 	eventemitter.IEventEmitter
 	logger logr.Logger
-	locker sync.Mutex
+	mu     sync.Mutex
 	conn   *websocket.Conn
 	closed uint32
 }
@@ -34,6 +34,8 @@ func (t *WebsocketTransport) Send(message []byte) error {
 	if t.Closed() {
 		return errors.New("transport closed")
 	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
 	err := t.conn.WriteMessage(websocket.TextMessage, message)
 	if err != nil {
 		t.Close()
